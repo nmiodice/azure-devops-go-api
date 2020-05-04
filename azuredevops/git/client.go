@@ -1066,7 +1066,7 @@ func (client *ClientImpl) CreateRepository(ctx context.Context, args CreateRepos
 
 // Arguments for the CreateRepository function
 type CreateRepositoryArgs struct {
-	// (required) Specify the repo name, team project and/or parent repository. Team project information can be ommitted from gitRepositoryToCreate if the request is project-scoped (i.e., includes project Id).
+	// (required) Specify the repo name, team project and/or parent repository. Team project information can be omitted from gitRepositoryToCreate if the request is project-scoped (i.e., includes project Id).
 	GitRepositoryToCreate *GitRepositoryCreateOptions
 	// (optional) Project ID or project name
 	Project *string
@@ -3299,7 +3299,7 @@ func (client *ClientImpl) GetPolicyConfigurations(ctx context.Context, args GetP
 	}
 
 	var responseBodyValue []policy.PolicyConfiguration
-	err = client.Client.UnmarshalBody(resp, &responseBodyValue)
+	err = client.Client.UnmarshalCollectionBody(resp, &responseBodyValue)
 
 	var responseValue *GitPolicyConfigurationResponse
 	xmsContinuationTokenHeader := resp.Header.Get("x-ms-continuationtoken")
@@ -3436,8 +3436,15 @@ func (client *ClientImpl) GetPullRequestCommits(ctx context.Context, args GetPul
 	}
 	routeValues["pullRequestId"] = strconv.Itoa(*args.PullRequestId)
 
+	queryParams := url.Values{}
+	if args.Top != nil {
+		queryParams.Add("$top", strconv.Itoa(*args.Top))
+	}
+	if args.ContinuationToken != nil {
+		queryParams.Add("continuationToken", *args.ContinuationToken)
+	}
 	locationId, _ := uuid.Parse("52823034-34a8-4576-922c-8d8b77e9e4c4")
-	resp, err := client.Client.Send(ctx, http.MethodGet, locationId, "5.1", routeValues, nil, nil, "", "application/json", nil)
+	resp, err := client.Client.Send(ctx, http.MethodGet, locationId, "5.1", routeValues, queryParams, nil, "", "application/json", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -3456,6 +3463,10 @@ type GetPullRequestCommitsArgs struct {
 	PullRequestId *int
 	// (optional) Project ID or project name
 	Project *string
+	// (optional) Maximum number of commits to return.
+	Top *int
+	// (optional) The continuation token used for pagination.
+	ContinuationToken *string
 }
 
 // Return type for the GetPullRequestCommits function
